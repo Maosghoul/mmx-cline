@@ -5,7 +5,7 @@ import { useEffect, useState } from "react"
 import { useExtensionState } from "@/context/ExtensionStateContext"
 import { ApiKeyField } from "../common/ApiKeyField"
 import { ModelInfoView } from "../common/ModelInfoView"
-import { DropdownContainer, ModelSelector } from "../common/ModelSelector"
+import { DropdownContainer } from "../common/ModelSelector"
 import { normalizeApiConfiguration } from "../utils/providerUtils"
 import { useApiConfigurationHandlers } from "../utils/useApiConfigurationHandlers"
 
@@ -28,11 +28,17 @@ export const MinimaxProvider = ({ showModelOptions, isPopup, currentMode }: Mini
 	// Get the normalized configuration
 	const { selectedModelId, selectedModelInfo } = normalizeApiConfiguration(apiConfiguration, currentMode)
 
-	// Manage input mode: preset or custom
+	// Manage endpoint input mode: preset or custom
 	const currentValue = apiConfiguration?.minimaxApiLine || "international"
 	const isPreset = currentValue === "international" || currentValue === "china"
 	const [inputMode, setInputMode] = useState<"preset" | "custom">(isPreset ? "preset" : "custom")
 	const [customValue, setCustomValue] = useState(isPreset ? "" : currentValue)
+
+	// Manage model input mode: preset or custom
+	const currentModelId = selectedModelId || ""
+	const isPresetModel = currentModelId === "" || currentModelId in minimaxModels
+	const [modelInputMode, setModelInputMode] = useState<"preset" | "custom">(isPresetModel ? "preset" : "custom")
+	const [customModelValue, setCustomModelValue] = useState(isPresetModel ? "" : currentModelId)
 
 	useEffect(() => {
 		const value = apiConfiguration?.minimaxApiLine || "international"
@@ -42,6 +48,15 @@ export const MinimaxProvider = ({ showModelOptions, isPopup, currentMode }: Mini
 			setCustomValue(value)
 		}
 	}, [apiConfiguration?.minimaxApiLine])
+
+	useEffect(() => {
+		const modelId = selectedModelId || ""
+		const preset = modelId === "" || modelId in minimaxModels
+		setModelInputMode(preset ? "preset" : "custom")
+		if (!preset) {
+			setCustomModelValue(modelId)
+		}
+	}, [selectedModelId])
 
 	const handlePresetChange = (value: string) => {
 		if (value === "custom") {
@@ -58,6 +73,23 @@ export const MinimaxProvider = ({ showModelOptions, isPopup, currentMode }: Mini
 	const handleCustomInput = (value: string) => {
 		setCustomValue(value)
 		handleFieldChange("minimaxApiLine", value)
+	}
+
+	const handleModelPresetChange = (value: string) => {
+		if (value === "custom") {
+			setModelInputMode("custom")
+			if (customModelValue) {
+				handleModeFieldChange({ plan: "planModeApiModelId", act: "actModeApiModelId" }, customModelValue, currentMode)
+			}
+		} else {
+			setModelInputMode("preset")
+			handleModeFieldChange({ plan: "planModeApiModelId", act: "actModeApiModelId" }, value, currentMode)
+		}
+	}
+
+	const handleCustomModelInput = (value: string) => {
+		setCustomModelValue(value)
+		handleModeFieldChange({ plan: "planModeApiModelId", act: "actModeApiModelId" }, value, currentMode)
 	}
 
 	return (
@@ -115,18 +147,41 @@ export const MinimaxProvider = ({ showModelOptions, isPopup, currentMode }: Mini
 
 			{showModelOptions && (
 				<>
-					<ModelSelector
-						label="Model"
-						models={minimaxModels}
-						onChange={(e: any) =>
-							handleModeFieldChange(
-								{ plan: "planModeApiModelId", act: "actModeApiModelId" },
-								e.target.value,
-								currentMode,
-							)
-						}
-						selectedModelId={selectedModelId}
-					/>
+					<DropdownContainer className="dropdown-container" style={{ position: "inherit" }}>
+						<label htmlFor="minimax-model">
+							<span className="font-medium">Model</span>
+						</label>
+						<div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+							<VSCodeDropdown
+								id="minimax-model"
+								onChange={(e) => handleModelPresetChange((e.target as any).value)}
+								style={{
+									minWidth: 130,
+									position: "relative",
+									flex: modelInputMode === "preset" ? 1 : "0 0 auto",
+								}}
+								value={modelInputMode === "custom" ? "custom" : currentModelId}>
+								<VSCodeOption value="">Select a model...</VSCodeOption>
+								{Object.keys(minimaxModels).map((modelId) => (
+									<VSCodeOption key={modelId} value={modelId}>
+										{modelId}
+									</VSCodeOption>
+								))}
+								<VSCodeOption value="custom">自定义模型...</VSCodeOption>
+							</VSCodeDropdown>
+							{modelInputMode === "custom" && (
+								<VSCodeTextField
+									onInput={(e) => handleCustomModelInput((e.target as any).value)}
+									placeholder="输入自定义模型 ID"
+									style={{
+										flex: 1,
+										minWidth: 200,
+									}}
+									value={customModelValue}
+								/>
+							)}
+						</div>
+					</DropdownContainer>
 
 					<ModelInfoView isPopup={isPopup} modelInfo={selectedModelInfo} selectedModelId={selectedModelId} />
 				</>

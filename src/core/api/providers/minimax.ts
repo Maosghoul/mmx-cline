@@ -218,13 +218,33 @@ export class MinimaxHandler implements ApiHandler {
 		}
 	}
 
-	getModel(): { id: MinimaxModelId; info: ModelInfo } {
+	getModel(): { id: MinimaxModelId | string; info: ModelInfo } {
 		const modelId = this.options.apiModelId
 
-		if (modelId && modelId in minimaxModels) {
-			const id = modelId as MinimaxModelId
-			return { id, info: minimaxModels[id] }
+		// If model ID is provided
+		if (modelId) {
+			// Check if it's a preset model
+			if (modelId in minimaxModels) {
+				const id = modelId as MinimaxModelId
+				return { id, info: minimaxModels[id] }
+			}
+			// Handle custom model ID
+			return {
+				id: modelId,
+				info: {
+					maxTokens: 128_000,
+					contextWindow: 192_000,
+					supportsImages: false,
+					supportsPromptCache: false,
+					inputPrice: 0.3,
+					outputPrice: 1.2,
+					cacheWritesPrice: 0,
+					cacheReadsPrice: 0,
+				},
+			}
 		}
+
+		// Default to MiniMax-M2
 		return { id: minimaxDefaultModelId, info: minimaxModels[minimaxDefaultModelId] }
 	}
 }
