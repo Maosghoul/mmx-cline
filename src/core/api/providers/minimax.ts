@@ -24,6 +24,32 @@ export class MinimaxHandler implements ApiHandler {
 		this.options = options
 	}
 
+	private getBaseURL(): string {
+		const apiLine = this.options.minimaxApiLine || "international"
+
+		// Handle preset values
+		if (apiLine === "china") {
+			return "https://api.minimaxi.com/anthropic"
+		}
+		if (apiLine === "international") {
+			return "https://api.minimax.io/anthropic"
+		}
+
+		// Handle custom endpoint
+		// If the custom value already includes protocol and path, use as-is
+		if (apiLine.startsWith("http://") || apiLine.startsWith("https://")) {
+			// If it already has /anthropic suffix, use as-is
+			if (apiLine.includes("/anthropic")) {
+				return apiLine
+			}
+			// Otherwise append /anthropic
+			return apiLine.endsWith("/") ? `${apiLine}anthropic` : `${apiLine}/anthropic`
+		}
+
+		// If it's just a domain, add https:// and /anthropic
+		return `https://${apiLine}/anthropic`
+	}
+
 	private ensureClient(): Anthropic {
 		if (!this.client) {
 			if (!this.options.minimaxApiKey) {
@@ -32,10 +58,7 @@ export class MinimaxHandler implements ApiHandler {
 			try {
 				this.client = new Anthropic({
 					apiKey: this.options.minimaxApiKey,
-					baseURL:
-						this.options.minimaxApiLine === "china"
-							? "https://api.minimaxi.com/anthropic"
-							: "https://api.minimax.io/anthropic",
+					baseURL: this.getBaseURL(),
 					fetch, // Use configured fetch with proxy support
 				})
 			} catch (error) {
