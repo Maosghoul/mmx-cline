@@ -380,7 +380,30 @@ export function normalizeApiConfiguration(
 				selectedModelInfo: aihubmixModelInfo || openAiModelInfoSaneDefaults,
 			}
 		case "minimax":
-			return getProviderData(minimaxModels, minimaxDefaultModelId)
+			// Support custom model IDs for MiniMax
+			if (modelId) {
+				if (modelId in minimaxModels) {
+					// Preset model
+					return {
+						selectedProvider: provider,
+						selectedModelId: modelId,
+						selectedModelInfo: minimaxModels[modelId as keyof typeof minimaxModels],
+					}
+				} else {
+					// Custom model - use the custom ID but with default model info
+					return {
+						selectedProvider: provider,
+						selectedModelId: modelId,
+						selectedModelInfo: minimaxModels[minimaxDefaultModelId],
+					}
+				}
+			}
+			// No model ID specified, use default
+			return {
+				selectedProvider: provider,
+				selectedModelId: minimaxDefaultModelId,
+				selectedModelInfo: minimaxModels[minimaxDefaultModelId],
+			}
 		case "nousResearch":
 			const nousResearchModelId =
 				currentMode === "plan"

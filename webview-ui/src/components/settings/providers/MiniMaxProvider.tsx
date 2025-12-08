@@ -78,9 +78,9 @@ export const MinimaxProvider = ({ showModelOptions, isPopup, currentMode }: Mini
 	const handleModelPresetChange = (value: string) => {
 		if (value === "custom") {
 			setModelInputMode("custom")
-			if (customModelValue) {
-				handleModeFieldChange({ plan: "planModeApiModelId", act: "actModeApiModelId" }, customModelValue, currentMode)
-			}
+			// When switching to custom mode, save the current custom value (even if empty)
+			// This ensures the mode is properly tracked
+			handleModeFieldChange({ plan: "planModeApiModelId", act: "actModeApiModelId" }, customModelValue || "", currentMode)
 		} else {
 			setModelInputMode("preset")
 			handleModeFieldChange({ plan: "planModeApiModelId", act: "actModeApiModelId" }, value, currentMode)
